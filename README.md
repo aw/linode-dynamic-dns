@@ -3,6 +3,8 @@
 ## Usage:
   * 1. Make sure you create a DNS entry with an A record pointing to your IP.
   * 2. Add this script to your crontab (runs every 10 minutes):
+
+### Crontab entry
     */10 * * * * bash -c 'source $HOME/.bash_profile && /usr/bin/ruby /opt/linode_dynamic_dns.rb'
 
 ## Config file (/tmp/.linoderc)
