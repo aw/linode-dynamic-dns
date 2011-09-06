@@ -8,7 +8,7 @@
 #      */10 * * * * bash -c 'source $HOME/.bash_profile && /usr/bin/ruby /opt/linode_dynamic_dns.rb'
 #
 # The config file ensures you're not constantly hitting Linode with DNS updates.
-# Config file (/tmp/.linoderc):
+# Config file (/opt/.linoderc):
 #   dynamic_host: macbook
 #   dynamic_domain: yourdomain.com
 #   api_key: your-linode-api-key
@@ -20,10 +20,10 @@
 require 'linode'
 require 'yaml'
 
-LINODE_CONFIG_FILE = "/tmp/.linoderc"
+LINODE_CONFIG_FILE = "/opt/.linoderc"
 
 class LinodeDynDNS
-  @@config = YAML.load_file(LINODE_CONFIG_FILE) # chmod 600 /tmp/.linoderc
+  @@config = YAML.load_file(LINODE_CONFIG_FILE) # chmod 600 /opt/.linoderc
 
   def initialize
     @@linode = Linode.new(:api_key => @@config['api_key'])

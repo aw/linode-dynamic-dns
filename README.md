@@ -7,7 +7,7 @@
 ### Crontab entry
     */10 * * * * bash -c 'source $HOME/.bash_profile && /usr/bin/ruby /opt/linode_dynamic_dns.rb'
 
-## Config file (/tmp/.linoderc)
+## Config file (/opt/.linoderc)
 
 The config file ensures you're not constantly hitting Linode with DNS updates.
 
