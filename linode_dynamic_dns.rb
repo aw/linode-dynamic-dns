@@ -3,14 +3,27 @@
 # Linode Dynamic DNS Update - github.com/alexwilliamsca
 #
 # Usage:
-#   1. Make sure you create a DNS entry with an A record pointing to your IP
-#   2. Run this script without arguments
+#   1. Make sure you create a DNS entry with an A record pointing to your IP.
+#   2. Add this script to your crontab (runs every 10 minutes):
+#      */10 * * * * bash -c 'source $HOME/.bash_profile && /usr/bin/ruby /opt/linode_dynamic_dns.rb'
+#
+# The config file ensures you're not constantly hitting Linode with DNS updates.
+# Config file (/tmp/.linoderc):
+#   dynamic_host: macbook
+#   dynamic_domain: yourdomain.com
+#   api_key: your-linode-api-key
+#
+# Notes:
+#   If you ever delete/recreate the A record in your DNS, you'll need to change
+#   or remove 'dynamic_host_resource_id' from your .linoderc config file
 
 require 'linode'
 require 'yaml'
 
+LINODE_CONFIG_FILE = "/tmp/.linoderc"
+
 class LinodeDynDNS
-  @@config = YAML.load_file("/tmp/.linoderc") # chmod 600 ~/.linoderc
+  @@config = YAML.load_file(LINODE_CONFIG_FILE) # chmod 600 /tmp/.linoderc
 
   def initialize
     @@linode = Linode.new(:api_key => @@config['api_key'])
@@ -35,39 +48,46 @@ class LinodeDynDNS
 
   def fetch_dynamic_name
     this_dynamic_name = fetch_domain_resources.find {|dynamic| dynamic.name == @@config['dynamic_host'] && dynamic.type.casecmp('a')}
+    @@config['dynamic_host_resource_id'] = this_dynamic_name.resourceid
     return this_dynamic_name
   end
 
-  def fetch_dynamic_name_id
-    unless @@config['dynamic_host_resource_id'] then
-      @@config['dynamic_host_resource_id'] = fetch_dynamic_name.resourceid
-    end
-    return @@config['dynamic_host_resource_id']
-  end
-
   def fetch_dynamic_ip
-    return fetch_dynamic_name.target
-  end
-
-  def create_dynamic_name_entry
-    result = @@linode.domain.resource.create(:DomainID => this_domain_id, :Type => 'A', :Name => @@config['dynamic_host'], :Target => '49.132.226.172', :TTL_sec => '300')
-    p result
-    if result.resourceid then
-      puts "Dynamic DNS entry has been added"
+    if @@config['dynamic_host_resource_id'] then
+      this_dynamic_resource = @@linode.domain.resource.list(:DomainID => fetch_domain_id, :ResourceID => @@config['dynamic_host_resource_id'])
+      this_dynamic_ip = this_dynamic_resource[0].target
+    else
+      this_dynamic_ip = fetch_dynamic_name.target
     end
+    return this_dynamic_ip
   end
 
   def fetch_public_ip
-    
+    @public_ip = %x[curl -s http://ipv4.icanhazip.com].chomp
   end
 
   def update_dynamic_name_entry
-    # - check if the entry is stored locally
-    # - check the public IP using curl
-    # - if there's no match, 
-  end
+    fetch_public_ip
+    unless @@config['dynamic_ip'] == @public_ip then
+      # fetch the IP stored in DNS
+      dynamic_ip = fetch_dynamic_ip
+      @@config['dynamic_ip'] = @public_ip
 
+      if dynamic_ip then
+        # if it exists, update it
+        result = @@linode.domain.resource.update(:DomainID => fetch_domain_id, :ResourceID => @@config['dynamic_host_resource_id'], :Type => 'A', :Name => @@config['dynamic_host'], :Target => @@config['dynamic_ip'], :TTL_sec => '300')
+        if result.resourceid then
+          config_file = File.open(LINODE_CONFIG_FILE, "w")
+          config_file.puts YAML.dump(@@config)
+          config_file.close
+          puts "Dynamic DNS entry has been UPDATED"
+        end
+      end
+    else
+      puts "DNS is already Up-To-Date"
+    end
+  end
 end
 
 linode = LinodeDynDNS.new
-p linode.fetch_dynamic_ip
+linode.update_dynamic_name_entry
