@@ -1,4 +1,4 @@
-# Linode Dynamic DNS Update - github.com/alexwilliamsca
+# Linode Dynamic DNS Update - github.com/aw
 
 ## Usage:
   * 1. Install the linode gem: `sudo gem install linode`
