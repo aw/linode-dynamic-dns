@@ -1,3 +1,7 @@
+# WARNING: DEPRECATED
+
+I don't use this anymore, and don't plan on maintaining it. Please use at your own risk.
+
 # Linode Dynamic DNS Update - github.com/aw
 
 ## Usage:
